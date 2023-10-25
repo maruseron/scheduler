@@ -9,12 +9,13 @@ public class MachineProcess {
 
     private String name = "unnamed";
     private int ip = 0;
+    // TODO: refactor state flags into bitfield
+    private boolean suspended = false;
     private boolean compiled = false;
     private boolean started = false;
-    private boolean suspended = false;
+    private boolean lockSuspended = false;
     private final List<Instruction> instructions = new ArrayList<>();
     public final int[] registers = new int[1024];
-    private boolean lockSuspended = false;
     private MachineMonoSemaphore semaphore = null;
 
     @Contract(" -> new")

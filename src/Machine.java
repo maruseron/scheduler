@@ -1,6 +1,8 @@
 import java.util.*;
 
 public class Machine {
+    // ideally an instance value, but hoping making this static final inlines most checks for better
+    // performance
     public static final boolean debugMode = true;
     public final MachineMonoSemaphore[] semaphores = new MachineMonoSemaphore[1024];
     {
@@ -93,6 +95,7 @@ public class Machine {
                     process.registers[add.register] += add.argument;
                 }
             }
+            // TODO: make shared memory aware
             case Instruction.SubtractInstruction sub -> {
                 if (debugMode) System.out.println("[ DEBUG ] INSTRUCTION - PROCESS: " + process.getName() + " -> SUBTRACT INSTRUCTION");
                 process.raisePointer();

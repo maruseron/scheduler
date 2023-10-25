@@ -2,7 +2,7 @@ import java.util.Deque;
 import java.util.LinkedList;
 
 public class MachineMonoSemaphore {
-    private Machine owner;
+    private final Machine owner;
     private boolean taken;
     private final Deque<MachineProcess> queue = new LinkedList<>();
 
@@ -12,11 +12,11 @@ public class MachineMonoSemaphore {
     }
     public boolean lock(MachineProcess process) {
         if (!taken) {
-            if (owner.debugMode) System.out.println("[ DEBUG ] PROCESS: " + process.getName() + " -> SEMAPHORE LOCKED");
+            if (Machine.debugMode) System.out.println("[ DEBUG ] PROCESS: " + process.getName() + " -> SEMAPHORE LOCKED");
             process.setSemaphore(this);
             return taken = true;
         } else {
-            if (owner.debugMode) System.out.println("[ DEBUG ] PROCESS: " + process.getName() + " -> SUSPENDED ON LOCK");
+            if (Machine.debugMode) System.out.println("[ DEBUG ] PROCESS: " + process.getName() + " -> SUSPENDED ON LOCK");
             process.setLockSuspended(true);
             process.suspend();
             queue.add(process);

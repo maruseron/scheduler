@@ -1,101 +1,40 @@
-import org.jetbrains.annotations.Contract;
-import org.jetbrains.annotations.NotNull;
-
-public abstract sealed class Instruction
+public sealed interface Instruction
         permits Instruction.LockInstruction,
                 Instruction.UnlockInstruction,
                 Instruction.AllocateInstruction,
-                Instruction.AddInstruction,
-                Instruction.SubtractInstruction,
+                Instruction.BinaryOperationInstruction,
                 Instruction.PrintInstruction {
 
-    @Contract("_ -> new")
-    public static @NotNull LockInstruction lock(int reg) {
-        return new LockInstruction(reg);
+    static Instruction lock(int register) {
+        return new LockInstruction(register);
     }
 
-    @Contract("_ -> new")
-    public static @NotNull UnlockInstruction unlock(int reg) {
-        return new UnlockInstruction(reg);
+    static Instruction unlock(int register) {
+        return new UnlockInstruction(register);
     }
 
-    @Contract("_, _, _ -> new")
-    public static @NotNull AllocateInstruction alloc(int arg, int reg, boolean shr) {
-        return new AllocateInstruction(arg, reg, shr);
+    static Instruction alloc(int register, int argument, MemoryScope memoryScope) {
+        return new AllocateInstruction(register, argument, memoryScope);
     }
 
-    @Contract("_, _, _ -> new")
-    public static @NotNull AddInstruction add(int arg, int reg, boolean shr) {
-        return new AddInstruction(arg, reg, shr);
+    static Instruction add(int register, int argument, MemoryScope memoryScope) {
+        return new BinaryOperationInstruction(register, argument, BinaryOp.ADD, memoryScope);
     }
 
-    @Contract("_, _, _ -> new")
-    public static @NotNull SubtractInstruction sub(int arg, int reg, boolean shr) {
-        return new SubtractInstruction(arg, reg, shr);
+    static Instruction sub(int register, int argument, MemoryScope memoryScope) {
+        return new BinaryOperationInstruction(register, argument, BinaryOp.SUB, memoryScope);
     }
 
-    @Contract("_, _ -> new")
-    public static @NotNull PrintInstruction print(int reg, boolean shr) {
-        return new PrintInstruction(reg, shr);
+    static Instruction print(int register, MemoryScope memoryScope) {
+        return new PrintInstruction(register, memoryScope);
     }
 
-    public static final class LockInstruction extends Instruction {
-        public final int register;
-        public final boolean shared;
-        public LockInstruction(int register) {
-            this.register = register;
-            this.shared = true;
-        }
-    }
+    enum MemoryScope { LOCAL, SHARED }
+    enum BinaryOp { ADD, SUB }
 
-    public static final class UnlockInstruction extends Instruction {
-        public final int register;
-        public final boolean shared;
-        public UnlockInstruction(int register) {
-            this.register = register;
-            this.shared = true;
-        }
-    }
-
-    public static final class AllocateInstruction extends Instruction {
-        public final int argument;
-        public final int register;
-        public final boolean shared;
-        public AllocateInstruction(int argument, int register, boolean shared) {
-            this.argument = argument;
-            this.register = register;
-            this.shared = shared;
-        }
-    }
-
-    public static final class AddInstruction extends Instruction {
-        public final int argument;
-        public final int register;
-        public final boolean shared;
-        public AddInstruction(int argument, int register, boolean shared) {
-            this.argument = argument;
-            this.register = register;
-            this.shared = shared;
-        }
-    }
-
-    public static final class SubtractInstruction extends Instruction {
-        public final int argument;
-        public final int register;
-        public final boolean shared;
-        public SubtractInstruction(int argument, int register, boolean shared) {
-            this.argument = argument;
-            this.register = register;
-            this.shared = shared;
-        }
-    }
-
-    public static final class PrintInstruction extends Instruction {
-        public final int register;
-        public final boolean shared;
-        public PrintInstruction(int register, boolean shared) {
-            this.register = register;
-            this.shared = shared;
-        }
-    }
+    record LockInstruction(int register) implements Instruction {}
+    record UnlockInstruction(int register) implements Instruction {}
+    record AllocateInstruction(int register, int argument, MemoryScope memoryScope) implements Instruction {}
+    record BinaryOperationInstruction(int register, int argument, BinaryOp binaryOp, MemoryScope memoryScope) implements Instruction {}
+    record PrintInstruction(int register, MemoryScope memoryScope) implements Instruction {}
 }

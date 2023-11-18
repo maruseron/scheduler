@@ -1,7 +1,7 @@
 import java.util.Deque;
 import java.util.LinkedList;
 
-public class MachineMonoSemaphore {
+public final class MachineMonoSemaphore {
     private final Machine owner;
     private boolean taken;
     private final Deque<MachineProcess> queue = new LinkedList<>();
@@ -11,13 +11,13 @@ public class MachineMonoSemaphore {
         this.taken = false;
     }
     public boolean lock(MachineProcess process) {
+        if (Machine.debugMode)
+            Logger.lock(process.name, taken);
         if (!taken) {
-            if (Machine.debugMode) System.out.println("[ DEBUG ] PROCESS: " + process.getName() + " -> SEMAPHORE LOCKED");
-            process.setSemaphore(this);
+            process.semaphore = this;
             return taken = true;
         } else {
-            if (Machine.debugMode) System.out.println("[ DEBUG ] PROCESS: " + process.getName() + " -> SUSPENDED ON LOCK");
-            process.setLockSuspended(true);
+            process.lockSuspend();
             process.suspend();
             queue.add(process);
             return false;
@@ -25,12 +25,17 @@ public class MachineMonoSemaphore {
     }
 
     public boolean unlock(MachineProcess process) {
-        process.setSemaphore(null);
+        process.semaphore = null;
         if (taken && !queue.isEmpty()) {
             var unlocked = queue.poll();
-            unlocked.setLockSuspended(false);
+            unlocked.liftSuspend();
             owner.queue.add(unlocked);
         }
-        return !(taken = false);
+        return !(taken = false); // intellij keeps thinking this is a condition ?
+    }
+
+    @Override
+    public String toString() {
+        return STR."MachineMonoSemaphore@\{hashCode()}{owner=\{owner}, taken=\{taken}}";
     }
 }

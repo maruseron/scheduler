@@ -1,106 +1,83 @@
-import org.jetbrains.annotations.Contract;
-import org.jetbrains.annotations.NotNull;
+import java.util.*;
+import java.util.stream.Stream;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+public final class MachineProcess {
+    public final String name;
+    public final EnumSet<State> state;
+    public final List<Instruction> instructions;
+    public final List<Integer> registers;
 
-public class MachineProcess {
+    public MachineMonoSemaphore semaphore;
+    public int ip;
 
-    private String name = "unnamed";
-    private int ip = 0;
-    // TODO: refactor state flags into bitfield
-    private boolean suspended = false;
-    private boolean compiled = false;
-    private boolean started = false;
-    private boolean lockSuspended = false;
-    private final List<Instruction> instructions = new ArrayList<>();
-    public final int[] registers = new int[1024];
-    private MachineMonoSemaphore semaphore = null;
+    public MachineProcess(String name) {
+        this.name = name == null ? "unnamed" : name;
+        this.state = EnumSet.noneOf(State.class);
+        this.instructions = new ArrayList<>();
+        this.registers = Arrays.asList(
+                Stream.generate(() -> 0).limit(1024).toArray(Integer[]::new));
 
-    @Contract(" -> new")
-    public static @NotNull MachineProcessBuilder builder() {
-        return new MachineProcessBuilder();
+        this.semaphore = null;
+        this.ip = 0;
     }
 
-    public String getName() {
-        return name;
+    public enum State { SUSPENDED, COMPILED, STARTED, LOCK_SUSPENDED }
+
+    public Instruction currentInstruction() {
+        return instructions.get(ip);
     }
 
-    public boolean isCompiled() {
-        return compiled;
+    public static MachineProcessBuilder builder(final String name) {
+        return new MachineProcessBuilder(name);
     }
 
-    public void setStarted() {
-        started = true;
-        suspended = false;
-    }
-
-    public boolean hasStarted() {
-        return started;
+    public void start() {
+        state.add(State.STARTED);
+        state.remove(State.SUSPENDED);
     }
 
     public void suspend() {
-        suspended = true;
+        state.add(State.SUSPENDED);
     }
 
-    public boolean isSuspended() {
-        return suspended;
-    }
-
-    public int getIp() {
-        return ip;
-    }
-
-    public int raisePointer() {
-        return ip++;
+    public void raisePointer() {
+        ip++;
     }
 
     public boolean atEnd() {
         return ip == instructions.size();
     }
 
-    public List<Instruction> instructions() {
-        return Collections.unmodifiableList(instructions);
+    public void lockSuspend() {
+        state.add(State.LOCK_SUSPENDED);
     }
 
-    public boolean isLockSuspended() {
-        return lockSuspended;
-    }
-
-    public void setLockSuspended(boolean lockSuspended) {
-        this.lockSuspended = lockSuspended;
-    }
-
-    public void setSemaphore(MachineMonoSemaphore semaphore) {
-        this.semaphore = semaphore;
-    }
-
-    public MachineMonoSemaphore getSemaphore() {
-        return semaphore;
+    public void liftSuspend() {
+        state.remove(State.LOCK_SUSPENDED);
     }
 
     public static class MachineProcessBuilder {
-        MachineProcess instance;
+        private final MachineProcess instance;
 
-        public MachineProcessBuilder() {
-            instance = new MachineProcess();
+        public MachineProcessBuilder(final String name) {
+            instance = new MachineProcess(name);
         }
+
         public MachineProcessBuilder add(Instruction i) {
-            if (!instance.compiled) {
+            if (!instance.state.contains(State.COMPILED)) {
                 instance.instructions.add(i);
             }
             return this;
         }
 
         public MachineProcess compile() {
-            instance.compiled = true;
+            instance.state.add(State.COMPILED);
             return instance;
         }
 
-        public MachineProcessBuilder setName(String name) {
-            instance.name = name;
-            return this;
+        @Override
+        public String toString() {
+            return STR."MachineProcessBuilder[MachineProcess \{instance.name}]";
         }
     }
 }
